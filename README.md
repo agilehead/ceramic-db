@@ -1,4 +1,4 @@
-ceramic-db
-==========
+ceramic
+=======
 
-NoSql Database Helpers for Ceramic
+Object Database Mapper with ES6 Generators-based async API
