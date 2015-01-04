@@ -4,8 +4,8 @@
     "email": "jeswinpk@agilehead.com"
   },
   "name": "ceramic-db",
-  "version": "0.1.0",
-  "description": "Object Database Mapper with ES6 Generators-based async API",
+  "version": "0.1.1",
+  "description": "Ceramic Db (Database backend for Ceramic)",
   "repository": {
     "type": "git",
     "url": "https://github.com/jeswin/ceramic-db.git"
