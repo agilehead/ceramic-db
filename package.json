@@ -4,7 +4,7 @@
     "email": "jeswinpk@agilehead.com"
   },
   "name": "ceramic-db",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Ceramic Db (Database backend for Ceramic)",
   "repository": {
     "type": "git",
@@ -12,8 +12,7 @@
   },
   "main": "lib/ceramic-db",
   "dependencies": {
-    "fora-node-thunkify": "*",
-    "ceramic-validator": "*"
+    "fora-node-thunkify": "*"
   },
   "devDependencies": {},
   "engines": {
@@ -33,5 +32,12 @@
       "name": "jeswin",
       "email": "jeswinpk@agilehead.com"
     }
-  ]
+  ],
+  "readme": "ceramic-db\n==========\n\nObject Database Mapper with ES6 Generators-based async API\n",
+  "readmeFilename": "README.md",
+  "gitHead": "415ca80f1b209816c7afcca4210f2b07a75b5414",
+  "_id": "ceramic-db@0.2.1",
+  "scripts": {},
+  "_shasum": "9a6cc866734c319f4522bca216f2e823c0fbf04a",
+  "_from": "ceramic-db@*"
 }
