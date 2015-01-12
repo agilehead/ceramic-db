@@ -12,15 +12,19 @@
   },
   "main": "lib/ceramic-db",
   "dependencies": {
+      "ceramic": "*"  
   },
-  "devDependencies": {      
+  "devDependencies": {
+    "co": "*",
+    "istanbul-harmony": "0",
+    "mocha": "^2.0.0"
   },
   "engines": {
     "node": ">= 0.11.9"
   },
   "keywords": [
-    "orm",
-    "object database mapper"
+    "orm", "odm", "ceramic",
+    "object document mapper", "mongodb"
   ],
   "license": "GPL-3.0+",
   "bugs": {
