@@ -8,7 +8,7 @@
     describe("Ceramic ODM", function() {
         var Author, BlogPost;
         var authorSchema, postSchema;
-        var Ceramic;
+        var Ceramic, ceramic;
 
         before(function() {
             return co(function*() {
@@ -60,25 +60,14 @@
                 };
 
             });
+
+            ceramic = new Ceramic();
+            yield* ceramic.init();
         });
 
 
-        it("completeEntitySchema must complete the entitySchema", function() {
+        it("must insert a record in the blogposts collection", function() {
             return co(function*() {
-                var songSchema = {
-                    name: 'song',
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            title: { type: 'string' },
-                            artist: { type: 'string' },
-                            price: { type: 'number' }
-                        },
-                        required: ['title', 'artist']
-                    }
-                };
-
-                var ceramic = new Ceramic();
                 var entitySchema = yield ceramic.completeEntitySchema(songSchema);
                 assert.notEqual(entitySchema, null);
                 assert.equal(entitySchema.schema.required.length, 2);
@@ -86,7 +75,7 @@
         });
 
 
-        it("completeVirtualEntitySchema must complete the virtualEntitySchema", function() {
+        it("must find ...", function() {
             return co(function*() {
                 var songSchema = {
                     name: 'song',
