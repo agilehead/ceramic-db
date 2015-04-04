@@ -11,13 +11,14 @@
     "url": "https://github.com/jeswin/ceramic-db.git"
   },
   "main": "lib/ceramic-db",
-  "dependencies": {
-      "ceramic": "*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "co": "*",
+    "ceramic": "*",
     "istanbul-harmony": "0",
-    "mocha": "^2.0.0"
+    "mocha": "^2.0.0",
+    "ceramic-db-api": "*",
+    "ceramic-backend-mongodb": "*"
   },
   "engines": {
     "node": ">= 0.11.9"

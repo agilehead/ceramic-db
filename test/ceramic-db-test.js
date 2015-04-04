@@ -4,16 +4,22 @@
 
     var co = require('co');
     var assert = require('assert');
+    var Ceramic = require("ceramic");
+    var CeramicDbAPI = require("ceramic-db-api");
+    var MongoBackend = require("ceramic-backend-mongodb");
+    var odm = require("../lib/ceramic-db");
 
-    describe("Ceramic ODM", function() {
+    var TEST_DB_NAME = "ceramic-db-unittest-db-temp";
+
+    describe("Ceramic ODM with MongoDb Backend", function() {
         var Author, BlogPost;
         var authorSchema, postSchema;
-        var Ceramic, ceramic;
+        var dbBackend, dbApi, ceramic;
+
+        var brosInArmsId, busyBeingBornId, markKnopflerId, davidKnopflerId;
 
         before(function() {
             return co(function*() {
-                Ceramic = require("../lib/ceramic");
-
                 Author = function(params) {
                     if (params) {
                         for(var key in params) {
@@ -23,9 +29,10 @@
                 };
 
                 authorSchema = {
-                    name: 'author',
                     ctor: Author,
+                    collection: "authors",
                     schema: {
+                        id: 'author',
                         type: 'object',
                         properties: {
                             name: { type: 'string' },
@@ -45,9 +52,10 @@
                 };
 
                 postSchema = {
-                    name: 'post',
                     ctor: BlogPost,
+                    collection: "posts",
                     schema: {
+                        id: 'post',
                         type: 'object',
                         properties: {
                             title: { type: 'string' },
@@ -59,274 +67,121 @@
                     }
                 };
 
-            });
+                //Init the schema cache
+                ceramic = new Ceramic();
+                yield* ceramic.init([authorSchema, postSchema]);
 
-            ceramic = new Ceramic();
-            yield* ceramic.init();
-        });
-
-
-        it("must insert a record in the blogposts collection", function() {
-            return co(function*() {
-                var entitySchema = yield ceramic.completeEntitySchema(songSchema);
-                assert.notEqual(entitySchema, null);
-                assert.equal(entitySchema.schema.required.length, 2);
+                //Delete database if it exists
+                dbBackend = new MongoBackend({ name: TEST_DB_NAME });
+                dbApi = new CeramicDbAPI(dbBackend);
+                yield* dbApi.deleteDatabase();
             });
         });
 
 
-        it("must find ...", function() {
+        it("save must save records", function() {
             return co(function*() {
-                var songSchema = {
-                    name: 'song',
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            title: { type: 'string' },
-                            artist: { type: 'string' },
-                            price: { type: 'number' }
-                        },
-                        required: ['title', 'artist']
-                    }
+
+                var markKnopfler = {
+                    name: "Mark Freuder Knopfler",
+                    location: "Gosforth, England",
+                    age: 65
                 };
 
-                var mp3Schema = {
-                    schema: {
-                        properties: {
-                            bitrate: { type: 'number' }
-                        },
-                        required: ['bitrate']
-                    }
+                var davidKnopfler = {
+                    name: "David Knopfler",
+                    location: "Newcastle-upon-Tyne, England",
+                    age: 62
                 };
 
-                var ceramic = new Ceramic();
-                var entitySchema = yield ceramic.completeVirtualEntitySchema(mp3Schema, songSchema);
-                assert.equal(entitySchema.schema.required.length, 3);
-            });
-        });
+                yield* odm.save(markKnopfler, authorSchema, ceramic, dbApi);
+                yield* odm.save(davidKnopfler, authorSchema, ceramic, dbApi);
 
+                markKnopflerId = markKnopfler._id.toString();
+                davidKnopflerId = davidKnopfler._id.toString();
 
-        it("init must create a schema cache", function() {
-            return co(function*() {
-                var ceramic = new Ceramic();
-                var schemaCache = yield ceramic.init([authorSchema, postSchema]);
-                assert.equal(Object.keys(schemaCache).length, 2);
-            });
-        });
-
-
-        it("constructEntity must construct a model", function() {
-            return co(function*() {
-                var ceramic = new Ceramic();
-                var schemaCache = yield ceramic.init([authorSchema, postSchema]);
-                var blogPostJSON = {
+                var busyBeingBorn    = {
                     title: "Busy Being Born",
                     content: "The days keep dragging on, Those rats keep pushing on,  The slowest race around, We all just race around ...",
                     published: "yes",
                     author: {
                         name: "Middle Class Rut",
-                        location: "USA",
-                    }
-                };
-                var blogPost = yield ceramic.constructEntity(blogPostJSON, postSchema);
-                assert.equal(blogPost instanceof BlogPost, true, "blogPost must be an instanceof BlogPost");
-                assert.equal(blogPost.author instanceof Author, true, "blogPost must be an instanceof Author");
-            });
-        });
-
-
-        it("constructEntity must construct a model with virtual-schema", function() {
-            return co(function*() {
-                var songSchema = {
-                    name: 'song',
-                    discriminator: function*(obj, ceramic) {
-                        return yield ceramic.getEntitySchema(obj.type);
-                    },
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            title: { type: 'string' },
-                            artist: { type: 'string' },
-                            price: { type: 'number' },
-                            type: { type: 'string' }
-                        },
-                        required: ['title', 'artist']
+                        location: "USA"
                     }
                 };
 
-                var mp3Schema = {
-                    name: "mp3",
-                    schema: {
-                        properties: {
-                            bitrate: { type: 'number' }
-                        },
-                        required: ['bitrate']
-                    }
-                };
-                var youtubeVideoSchema = {
-                    name: "youtube",
-                    schema: {
-                        properties: {
-                            url: { type: 'string' },
-                            highDef: { type: 'boolean' }
-                        },
-                        required: ['url', 'highDef']
-                    }
-                };
-
-                var ceramic = new Ceramic();
-                var schemaCache = yield ceramic.init(
-                    [songSchema], //schemas
-                    [
-                        {
-                            entitySchemas: [mp3Schema, youtubeVideoSchema],
-                            baseEntitySchema: songSchema
-                        }
-                    ] //virtual-schemas
-                );
-
-                var mp3JSON = {
-                    "type": "mp3",
-                    "title": "Busy Being Born",
-                    "artist": "Middle Class Rut",
-                    "bitrate": 320
-                };
-
-                var mp3 = yield ceramic.constructEntity(mp3JSON, songSchema, { validate: true });
-                assert.equal(mp3.bitrate, 320);
-            });
-        });
-
-
-        it("updateEntity must update a model", function() {
-            return co(function*() {
-                var blogPost = new BlogPost({
-                    title: "---",
-                    content: "---"
-                });
-                var ceramic = new Ceramic();
-                var schemaCache = yield ceramic.init([authorSchema, postSchema]);
-                var blogPostJSON = {
-                    title: "Busy Being Born",
-                    content: "The days keep dragging on, Those rats keep pushing on,  The slowest race around, We all just race around ...",
+                var brosInArms = {
+                    title: "Brothers in Arms",
+                    content: "These mist covered mountains, Are a home now for me, But my home is the lowlands ...",
                     published: "yes",
                     author: {
-                        name: "Middle Class Rut",
-                        location: "USA",
+                        name: "Dire Straits",
+                        location: "UK"
                     }
                 };
-                yield ceramic.updateEntity(blogPost, blogPostJSON, postSchema);
-                assert.equal(blogPost instanceof BlogPost, true, "blogPost must be an instanceof BlogPost");
-                assert.equal(blogPost.author instanceof Author, true, "blogPost must be an instanceof Author");
-                assert.equal(blogPost.title, "Busy Being Born", "blogPost.title must be Busy Being Born");
+
+                yield* odm.save(busyBeingBorn, postSchema, ceramic, dbApi);
+                yield* odm.save(brosInArms, postSchema, ceramic, dbApi);
+
+                busyBeingBornId = busyBeingBorn._id.toString();
+                brosInArmsId = brosInArms._id.toString();
+
+                assert.equal(typeof markKnopflerId === "string", true, "_id after saving must be a string");
+                assert.equal(typeof davidKnopflerId === "string", true, "_id after saving must be a string");
+                assert.equal(typeof busyBeingBornId === "string", true, "_id after saving must be a string");
+                assert.equal(typeof brosInArmsId === "string", true, "_id after saving must be a string");
+            });
+        });
+
+        it("findById must return the record with the specific id", function() {
+            return co(function*() {
+                var rec = yield* odm.findById(postSchema, busyBeingBornId, ceramic, dbApi);
+                assert.equal(rec.title, "Busy Being Born");
             });
         });
 
 
-        it("validate must return errors for incorrect schema", function() {
+        it("findById must return null with missing id", function() {
             return co(function*() {
-                var ceramic = new Ceramic();
-                var typeCache = yield ceramic.init([authorSchema, postSchema]);
-                var blogPost = new BlogPost({
-                    title: "---",
-                    content: "---"
-                });
-                var errors = yield ceramic.validate(blogPost, postSchema);
-                assert.equal(errors.length > 0, true);
+                var rec = yield* odm.findById(postSchema, "id6666666666", ceramic, dbApi);
+                assert.equal(rec, null);
             });
         });
 
 
-        it("validate must return errors for incorrect author field", function() {
+        it("find must return an array of matching records", function() {
             return co(function*() {
-                var ceramic = new Ceramic();
-                var typeCache = yield ceramic.init([authorSchema, postSchema]);
-                var blogPost = new BlogPost({
-                    title: "---",
-                    content: "---",
-                    author: "jeswin"
-                });
-                var errors = yield ceramic.validate(blogPost, postSchema);
-                assert.equal(errors.length > 0, true);
+                var rec = yield* odm.find(postSchema, { published: "yes" }, ceramic, dbApi);
+                assert.equal(rec.length, 2);
             });
         });
 
 
-        it("validate must return no errors for correct schema", function() {
+        it("findOne must return a single matching record", function() {
             return co(function*() {
-                var ceramic = new Ceramic();
-                var typeCache = yield ceramic.init([authorSchema, postSchema]);
-                var blogPost = new BlogPost({
-                    title: "Busy Being Born",
-                    content: "The days keep dragging on, Those rats keep pushing on,  The slowest race around, We all just race around ...",
-                    published: "yes",
-                    author: new Author({
-                        name: "jeswin",
-                        location: "bangalore"
-                    })
-                });
-                var errors = yield ceramic.validate(blogPost, postSchema);
-                assert.equal(errors.length, 0);
+                var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                assert.equal(rec.title, "Busy Being Born");
             });
         });
 
 
-
-        it("load a dynamic schema", function() {
+        it("count must return the number of matching records", function() {
             return co(function*() {
-                var songSchema = {
-                    name: 'song',
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            title: { type: 'string' },
-                            artist: { type: 'string' },
-                            price: { type: 'number' },
-                            torrent: { $ref: 'torrent' }
-                        },
-                        required: ['title', 'artist']
-                    }
-                };
+                var count = yield* odm.count(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                assert.equal(count, 1);
 
-                var torrentSchema = {
-                    name: "torrent",
-                    schema: {
-                        properties: {
-                            fileName: { type: 'string' },
-                            seeds: { type: 'number' },
-                            leeches: { type: 'number' }
-                        },
-                        required: ['fileName', 'seeds', 'leeches']
-                    }
-                };
+                count = yield* odm.count(postSchema, {}, ceramic, dbApi);
+                assert.equal(count, 2);
+            });
+        });
 
-                var dynamicLoader = function*(name, dynamicResolutionContext) {
-                    switch(name) {
-                        case "torrent":
-                            return yield ceramic.completeEntitySchema(torrentSchema);
-                    }
-                };
 
-                var ceramic = new Ceramic({
-                    fn: { getDynamicEntitySchema: dynamicLoader }
-                });
-
-                //song schema references torrent schema, but is not provided during init.
-                var schemaCache = yield ceramic.init([songSchema]);
-
-                var songJSON = {
-                    title: "Busy Being Born",
-                    artist: "Middle Class Rut",
-                    price: 10,
-                    torrent: {
-                        fileName: "busy-being-born.mp3",
-                        seeds: 1000,
-                        leeches: 1100
-                    }
-                };
-
-                var mp3 = yield ceramic.constructEntity(songJSON, songSchema, { validate: true });
-                assert.equal(mp3.torrent.fileName, "busy-being-born.mp3");
+        it("destroy must delete a record", function() {
+            return co(function*() {
+                var busyBeingBorn = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                yield* odm.destroy(busyBeingBorn, postSchema, ceramic, dbApi);
+                var count = yield* odm.count(postSchema, {}, ceramic, dbApi);
+                assert.equal(count, 1);
             });
         });
 
