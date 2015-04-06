@@ -4,7 +4,7 @@
     "email": "jeswinpk@agilehead.com"
   },
   "name": "ceramic-db",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Ceramic Db (Database backend for Ceramic)",
   "repository": {
     "type": "git",

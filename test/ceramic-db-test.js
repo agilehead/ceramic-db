@@ -12,14 +12,48 @@
     var TEST_DB_NAME = "ceramic-db-unittest-db-temp";
 
     describe("Ceramic ODM with MongoDb Backend", function() {
-        var Author, BlogPost;
-        var authorSchema, postSchema;
+        var Author, BlogPost, Publisher;
+        var authorSchema, postSchema, publisherSchema;
         var dbBackend, dbApi, ceramic;
 
         var brosInArmsId, busyBeingBornId, markKnopflerId, davidKnopflerId;
 
         before(function() {
             return co(function*() {
+
+                Publisher = function(params) {
+                    if (params) {
+                        for(var key in params) {
+                            this[key] = params[key];
+                        }
+                    }
+                };
+
+
+                publisherSchema = {
+                    ctor: Publisher,
+                    collection: "publishers",
+                    schema: {
+                        id: 'publisher',
+                        type: 'object',
+                        properties: {
+                            name: { type: 'string' },
+                            labels: {
+                                type: "array",
+                                items: {
+                                    type: "string"
+                                },
+                                minItems: 1
+                            }
+                        },
+                        required: ['name', 'labels']
+                    },
+                    canDestroyAll: function(params) {
+                        return true;
+                    }
+                };
+
+
                 Author = function(params) {
                     if (params) {
                         for(var key in params) {
@@ -40,6 +74,9 @@
                             age: { type: 'number' }
                         },
                         required: ['name', 'location']
+                    },
+                    canDestroyAll: function(params) {
+                        return true;
                     }
                 };
 
@@ -61,15 +98,19 @@
                             title: { type: 'string' },
                             content: { type: 'string' },
                             published: { type: 'string' },
+                            publisherId: { type: 'string' },
                             author: { $ref: 'author' }
                         },
-                        required: ['title', 'content', 'author']
+                        required: ['title', 'content', 'author', 'publisherId']
+                    },
+                    links: {
+                        publisher: { type: "publisher", key: "publisherId" }
                     }
                 };
 
                 //Init the schema cache
                 ceramic = new Ceramic();
-                yield* ceramic.init([authorSchema, postSchema]);
+                yield* ceramic.init([authorSchema, postSchema, publisherSchema]);
 
                 //Delete database if it exists
                 dbBackend = new MongoBackend({ name: TEST_DB_NAME });
@@ -81,6 +122,13 @@
 
         it("save must save records", function() {
             return co(function*() {
+
+                var batmanPublisher = {
+                    name: "The Batman Publishing Company",
+                    labels: ["Comica", "Lyrica"]
+                };
+
+                yield* odm.save(batmanPublisher, publisherSchema, ceramic, dbApi);
 
                 var markKnopfler = {
                     name: "Mark Freuder Knopfler",
@@ -107,7 +155,8 @@
                     author: {
                         name: "Middle Class Rut",
                         location: "USA"
-                    }
+                    },
+                    publisherId: batmanPublisher._id.toString()
                 };
 
                 var brosInArms = {
@@ -117,7 +166,8 @@
                     author: {
                         name: "Dire Straits",
                         location: "UK"
-                    }
+                    },
+                    publisherId: batmanPublisher._id.toString()
                 };
 
                 yield* odm.save(busyBeingBorn, postSchema, ceramic, dbApi);
@@ -176,12 +226,45 @@
         });
 
 
+        it("link must retrieve corresponding record", function() {
+            return co(function*() {
+                var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                var publisher = yield* odm.link(rec, postSchema, "publisher", ceramic, dbApi);
+                assert.equal(publisher.name, "The Batman Publishing Company");
+            });
+        });
+
+
         it("destroy must delete a record", function() {
             return co(function*() {
                 var busyBeingBorn = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
                 yield* odm.destroy(busyBeingBorn, postSchema, ceramic, dbApi);
                 var count = yield* odm.count(postSchema, {}, ceramic, dbApi);
                 assert.equal(count, 1);
+            });
+        });
+
+
+        it("destroyAll must throw an Error if canDestroyAll is not defined", function(done) {
+            co(function*() {
+                try {
+                    yield* odm.destroyAll(postSchema, {}, ceramic, dbApi);
+                    done(new Error("Should not delete without calling canDestroyAll()"));
+                } catch (ex) {
+                    done();
+                }
+            });
+        });
+
+
+        it("destroyAll must NOT throw an Error if canDestroyAll is defined", function(done) {
+            co(function*() {
+                try {
+                    yield* odm.destroyAll(authorSchema, {}, ceramic, dbApi);
+                    done();
+                } catch (ex) {
+                    done(new Error("Can delete if canDestroyAll() returns true"));
+                }
             });
         });
 
