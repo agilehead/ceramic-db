@@ -18,7 +18,8 @@
     "istanbul-harmony": "0",
     "mocha": "^2.0.0",
     "ceramic-db-api": "*",
-    "ceramic-backend-mongodb": "*"
+    "ceramic-backend-mongodb": "*",
+    "ceramic-backend-nedb": "*",
   },
   "engines": {
     "node": ">= 0.11.9"

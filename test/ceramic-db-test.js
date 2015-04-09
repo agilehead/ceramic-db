@@ -5,16 +5,17 @@
     var co = require('co');
     var assert = require('assert');
     var Ceramic = require("ceramic");
-    var CeramicDbAPI = require("ceramic-db-api");
     var MongoBackend = require("ceramic-backend-mongodb");
     var odm = require("../lib/ceramic-db");
 
-    module.exports = function(dbBackend) {
+    module.exports = function(getDb, backendName) {
 
-        describe("Ceramic ODM with MongoDb Backend", function() {
+        var db;
+
+        describe("Ceramic ODM with " + backendName, function() {
             var Author, BlogPost, Publisher;
             var authorSchema, postSchema, publisherSchema;
-            var dbApi, ceramic;
+            var ceramic;
 
             var brosInArmsId, busyBeingBornId, markKnopflerId, davidKnopflerId;
 
@@ -113,8 +114,8 @@
                     yield* ceramic.init([authorSchema, postSchema, publisherSchema]);
 
                     //Delete database if it exists
-                    dbApi = new CeramicDbAPI(dbBackend);
-                    yield* dbApi.deleteDatabase();
+                    db = yield* getDb();
+                    yield* db.dropDatabase();
                 });
             });
 
@@ -127,7 +128,7 @@
                         labels: ["Comica", "Lyrica"]
                     };
 
-                    yield* odm.save(batmanPublisher, publisherSchema, ceramic, dbApi);
+                    yield* odm.save(batmanPublisher, publisherSchema, ceramic, db);
 
                     var markKnopfler = {
                         name: "Mark Freuder Knopfler",
@@ -141,8 +142,8 @@
                         age: 62
                     };
 
-                    yield* odm.save(markKnopfler, authorSchema, ceramic, dbApi);
-                    yield* odm.save(davidKnopfler, authorSchema, ceramic, dbApi);
+                    yield* odm.save(markKnopfler, authorSchema, ceramic, db);
+                    yield* odm.save(davidKnopfler, authorSchema, ceramic, db);
 
                     markKnopflerId = markKnopfler._id.toString();
                     davidKnopflerId = davidKnopfler._id.toString();
@@ -169,8 +170,8 @@
                         publisherId: batmanPublisher._id.toString()
                     };
 
-                    yield* odm.save(busyBeingBorn, postSchema, ceramic, dbApi);
-                    yield* odm.save(brosInArms, postSchema, ceramic, dbApi);
+                    yield* odm.save(busyBeingBorn, postSchema, ceramic, db);
+                    yield* odm.save(brosInArms, postSchema, ceramic, db);
 
                     busyBeingBornId = busyBeingBorn._id.toString();
                     brosInArmsId = brosInArms._id.toString();
@@ -184,7 +185,7 @@
 
             it("findById must return the record with the specific id", function() {
                 return co(function*() {
-                    var rec = yield* odm.findById(postSchema, busyBeingBornId, ceramic, dbApi);
+                    var rec = yield* odm.findById(postSchema, busyBeingBornId, ceramic, db);
                     assert.equal(rec.title, "Busy Being Born");
                 });
             });
@@ -192,7 +193,7 @@
 
             it("findById must return null with missing id", function() {
                 return co(function*() {
-                    var rec = yield* odm.findById(postSchema, "id6666666666", ceramic, dbApi);
+                    var rec = yield* odm.findById(postSchema, "id6666666666", ceramic, db);
                     assert.equal(rec, null);
                 });
             });
@@ -200,7 +201,7 @@
 
             it("find must return an array of matching records", function() {
                 return co(function*() {
-                    var rec = yield* odm.find(postSchema, { published: "yes" }, ceramic, dbApi);
+                    var rec = yield* odm.find(postSchema, { published: "yes" }, ceramic, db);
                     assert.equal(rec.length, 2);
                 });
             });
@@ -208,7 +209,7 @@
 
             it("findOne must return a single matching record", function() {
                 return co(function*() {
-                    var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                    var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, db);
                     assert.equal(rec.title, "Busy Being Born");
                 });
             });
@@ -216,10 +217,10 @@
 
             it("count must return the number of matching records", function() {
                 return co(function*() {
-                    var count = yield* odm.count(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
+                    var count = yield* odm.count(postSchema, { title: "Busy Being Born" }, ceramic, db);
                     assert.equal(count, 1);
 
-                    count = yield* odm.count(postSchema, {}, ceramic, dbApi);
+                    count = yield* odm.count(postSchema, {}, ceramic, db);
                     assert.equal(count, 2);
                 });
             });
@@ -227,8 +228,8 @@
 
             it("link must retrieve corresponding record", function() {
                 return co(function*() {
-                    var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
-                    var publisher = yield* odm.link(rec, postSchema, "publisher", ceramic, dbApi);
+                    var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, db);
+                    var publisher = yield* odm.link(rec, postSchema, "publisher", ceramic, db);
                     assert.equal(publisher.name, "The Batman Publishing Company");
                 });
             });
@@ -236,9 +237,9 @@
 
             it("destroy must delete a record", function() {
                 return co(function*() {
-                    var busyBeingBorn = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, dbApi);
-                    yield* odm.destroy(busyBeingBorn, postSchema, ceramic, dbApi);
-                    var count = yield* odm.count(postSchema, {}, ceramic, dbApi);
+                    var busyBeingBorn = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, db);
+                    yield* odm.destroy(busyBeingBorn, postSchema, ceramic, db);
+                    var count = yield* odm.count(postSchema, {}, ceramic, db);
                     assert.equal(count, 1);
                 });
             });
@@ -247,7 +248,7 @@
             it("destroyAll must throw an Error if canDestroyAll is not defined", function(done) {
                 co(function*() {
                     try {
-                        yield* odm.destroyAll(postSchema, {}, ceramic, dbApi);
+                        yield* odm.destroyAll(postSchema, {}, ceramic, db);
                         done(new Error("Should not delete without calling canDestroyAll()"));
                     } catch (ex) {
                         done();
@@ -259,7 +260,7 @@
             it("destroyAll must NOT throw an Error if canDestroyAll is defined", function(done) {
                 co(function*() {
                     try {
-                        yield* odm.destroyAll(authorSchema, {}, ceramic, dbApi);
+                        yield* odm.destroyAll(authorSchema, {}, ceramic, db);
                         done();
                     } catch (ex) {
                         done(new Error("Can delete if canDestroyAll() returns true"));

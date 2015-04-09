@@ -1,6 +1,9 @@
 var tests = require("./ceramic-db-test");
 var TEST_DB_NAME = "ceramic-db-unittest-db-temp";
-var MongoBackend = require("ceramic-backend-mongodb");
-var dbBackend = new MongoBackend({ name: TEST_DB_NAME });
+var Client = require("ceramic-backend-mongodb").MongoClient;
 
-tests(dbBackend);
+var getDb = function*() {
+    return yield* Client.connect({ database: TEST_DB_NAME });
+};
+
+tests(getDb, "MongoDb");
