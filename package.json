@@ -4,7 +4,7 @@
     "email": "jeswinpk@agilehead.com"
   },
   "name": "ceramic-db",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "description": "Ceramic Db (Database backend for Ceramic)",
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
     "mocha": "^2.0.0",
     "ceramic-db-api": "*",
     "ceramic-backend-mongodb": "*",
-    "ceramic-backend-nedb": "*",
+    "ceramic-backend-nedb": "*"
   },
   "engines": {
     "node": ">= 0.11.9"

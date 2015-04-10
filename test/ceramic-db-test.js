@@ -183,7 +183,7 @@
                 });
             });
 
-            it("findById must return the record with the specific id", function() {
+            it("findById must find the record with the corresponding id", function() {
                 return co(function*() {
                     var rec = yield* odm.findById(postSchema, busyBeingBornId, ceramic, db);
                     assert.equal(rec.title, "Busy Being Born");
@@ -191,7 +191,7 @@
             });
 
 
-            it("findById must return null with missing id", function() {
+            it("findById must return null with incorrect id", function() {
                 return co(function*() {
                     var rec = yield* odm.findById(postSchema, "id6666666666", ceramic, db);
                     assert.equal(rec, null);
@@ -201,8 +201,8 @@
 
             it("find must return an array of matching records", function() {
                 return co(function*() {
-                    var rec = yield* odm.find(postSchema, { published: "yes" }, ceramic, db);
-                    assert.equal(rec.length, 2);
+                    var records = yield* odm.find(postSchema, { published: "yes" }, ceramic, db);
+                    assert.equal(records.length, 2);
                 });
             });
 
@@ -238,7 +238,7 @@
             it("destroy must delete a record", function() {
                 return co(function*() {
                     var busyBeingBorn = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, db);
-                    yield* odm.destroy(busyBeingBorn, postSchema, ceramic, db);
+                    yield* odm.delete(busyBeingBorn, postSchema, ceramic, db);
                     var count = yield* odm.count(postSchema, {}, ceramic, db);
                     assert.equal(count, 1);
                 });
@@ -248,7 +248,7 @@
             it("destroyAll must throw an Error if canDestroyAll is not defined", function(done) {
                 co(function*() {
                     try {
-                        yield* odm.destroyAll(postSchema, {}, ceramic, db);
+                        yield* odm.deleteMany(postSchema, {}, ceramic, db);
                         done(new Error("Should not delete without calling canDestroyAll()"));
                     } catch (ex) {
                         done();
@@ -257,10 +257,12 @@
             });
 
 
-            it("destroyAll must NOT throw an Error if canDestroyAll is defined", function(done) {
+            it("destroyAll must delete everything and NOT throw an Error if canDestroyAll is defined", function(done) {
                 co(function*() {
                     try {
-                        yield* odm.destroyAll(authorSchema, {}, ceramic, db);
+                        yield* odm.deleteMany(authorSchema, {}, ceramic, db);
+                        var records = yield* odm.find(authorSchema, {}, ceramic, db);
+                        assert.equal(records.length, 0);
                         done();
                     } catch (ex) {
                         done(new Error("Can delete if canDestroyAll() returns true"));
