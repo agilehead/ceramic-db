@@ -207,6 +207,34 @@
             });
 
 
+            it("find with limit option must limit matching records", function() {
+                return co(function*() {
+                    var records = yield* odm.find(postSchema, { published: "yes" }, { limit: 1 }, ceramic, db);
+                    assert.equal(records.length, 1);
+                });
+            });
+
+
+            it("find with sort option must return sorted records", function() {
+                return co(function*() {
+                    var records = yield* odm.find(postSchema, { published: "yes" }, { sort: { title: 1 } }, ceramic, db);
+                    assert.equal(records[0].title, "Brothers in Arms");
+
+                    records = yield* odm.find(postSchema, { published: "yes" }, { sort: { title: -1 } }, ceramic, db);
+                    assert.equal(records[0].title, "Busy Being Born");
+                });
+            });
+
+
+            it("find with skip option must skip a specified number of records", function() {
+                return co(function*() {
+                    var records = yield* odm.find(postSchema, { published: "yes" }, { skip: 1 }, ceramic, db);
+                    assert.equal(records[0].title, "Brothers in Arms");
+                    assert.equal(records.length, 1);
+                });
+            });
+
+
             it("findOne must return a single matching record", function() {
                 return co(function*() {
                     var rec = yield* odm.findOne(postSchema, { title: "Busy Being Born" }, ceramic, db);
