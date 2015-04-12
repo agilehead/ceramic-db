@@ -2,17 +2,16 @@
 
     "use strict";
 
-    var co = require('co');
-    var assert = require('assert');
-    var Ceramic = require("ceramic");
-    var MongoBackend = require("ceramic-backend-mongodb");
-    var odm = require("../lib/ceramic-db");
-
     module.exports = function(getDb, backendName) {
 
-        var db;
+        var co = require('co');
+        var assert = require('assert');
+        var Ceramic = require("ceramic");
+        var odm = require("../lib/ceramic-db");
 
         describe("Ceramic ODM with " + backendName, function() {
+            var db;
+
             var Author, BlogPost, Publisher;
             var authorSchema, postSchema, publisherSchema;
             var ceramic;
@@ -180,6 +179,7 @@
                     assert.equal(typeof davidKnopflerId === "string", true, "_id after saving must be a string");
                     assert.equal(typeof busyBeingBornId === "string", true, "_id after saving must be a string");
                     assert.equal(typeof brosInArmsId === "string", true, "_id after saving must be a string");
+
                 });
             });
 
