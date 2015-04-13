@@ -233,7 +233,7 @@
 
             it("find with skip option must skip a specified number of records", function() {
                 return co(function*() {
-                    var cursor = (yield* odm.find(postSchema, { published: "yes" }, ceramic, db)).skip(1);
+                    var cursor = (yield* odm.find(postSchema, { published: "yes" }, ceramic, db)).sort({title: -1}).skip(1);
                     var records = yield* cursor.toArray();
                     assert.equal(records[0].title, "Brothers in Arms");
                     assert.equal(records.length, 1);
